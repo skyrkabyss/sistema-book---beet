@@ -1,0 +1,23 @@
+@model LibroRenta
+@{ ViewData["Title"]="Lectura: "+Model.Titulo;
+   var pdfUrl=Url.Action("ArchivoPdf","Libros",new {id=Model.Id}) ?? ""; }
+<section class="shell section-pad-sm">
+ <div class="reader-header">
+  <p class="eyebrow">BOOK & BEET · LECTURA DIGITAL</p>
+  <h1>@Model.Titulo</h1><p>@Model.Autor</p>
+  <p class="small">Edición autorizada: @Model.Derechos</p>
+  <a class="btn btn-outline-earth btn-sm" asp-action="Detalle" asp-route-id="@Model.Id">← Volver al libro</a>
+  <button class="btn btn-earth btn-sm" type="button" data-open-playlists>♫ Mis playlists · Cambiar canción</button>
+ </div>
+ <div class="reader-notice mb-3" role="note">Visualizador de lectura: los controles de descarga e impresión no se muestran en Book & Beet. La copia de contenido no se puede impedir totalmente en un navegador.</div>
+ <div id="bookPdfViewer" data-pdf-url="@pdfUrl" class="book-pdf-viewer" aria-label="Lector de PDF de @Model.Titulo">
+  <nav class="pdf-reader-controls" aria-label="Navegación de páginas">
+   <button id="pdfPrev" class="btn btn-outline-earth btn-sm" type="button" disabled>← Anterior</button>
+   <span id="pdfPageStatus" role="status" aria-live="polite">Preparando libro…</span>
+   <button id="pdfNext" class="btn btn-outline-earth btn-sm" type="button" disabled>Siguiente →</button>
+  </nav>
+  <div class="pdf-canvas-wrap"><canvas id="pdfCanvas" aria-label="Página del libro"></canvas></div>
+  <p id="pdfError" class="small text-muted px-3" aria-live="polite" hidden></p>
+  <iframe id="pdfReaderFallback" class="pdf-reader" title="Lector PDF de @Model.Titulo" src="about:blank" loading="lazy" hidden></iframe>
+ </div>
+</section>

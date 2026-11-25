@@ -1,0 +1,42 @@
+@model LibrosLibresVista
+@{ ViewData["Title"]="Leer gratis";
+   bool conBusqueda=!string.IsNullOrWhiteSpace(Model.Buscar);
+}
+<section class="page-hero"><div class="shell"><p class="eyebrow">BIBLIOTECA DE ACCESO GRATUITO</p><h1>Leer <i>gratis.</i></h1>
+<p>Encuentra las ediciones del catálogo Book & Beet que cuestan Bs 0. La biblioteca local funciona sin conexión a servicios externos.</p></div></section>
+<section class="shell section-pad-sm">
+<form class="search-bar" method="get" asp-action="Gratis">
+ <input type="search" maxlength="90" name="buscar" value="@Model.Buscar" placeholder="Título, autor o género..." aria-label="Buscar libros gratuitos" />
+ <button class="btn btn-earth" type="submit">Buscar gratis</button>
+</form>
+<div class="section-heading-row mt-5"><div><p class="eyebrow">LIBROS DE TU BASE DE DATOS</p><h2 class="section-title">Lecturas <i>sin costo.</i></h2><p>Se muestran automáticamente las obras con precio de alquiler igual a cero en MySQL.</p></div><a asp-action="Index" class="inline-link">Catálogo completo →</a></div>
+<div class="row g-4">
+@foreach(var b in Model.LocalesGratis) {
+ bool disponible=!string.IsNullOrWhiteSpace(b.Derechos) &&
+    (!string.IsNullOrWhiteSpace(b.ArchivoPdf)||!string.IsNullOrWhiteSpace(b.RutaLectura)||!string.IsNullOrWhiteSpace(b.UrlLectura));
+ <div class="col-sm-6 col-lg-4 col-xl-3"><article class="book-card h-100">
+  <div class="book-cover cover-@((b.Id%4)+1)"><span class="cover-mini">BOOK & BEET · GRATIS</span><strong>@b.Titulo</strong><span>@b.Autor</span></div>
+  <div class="book-card-body"><span class="category">@b.Genero · Bs 0</span><h3>@b.Titulo</h3><p>@b.Autor</p>
+  @if(disponible){<a class="btn btn-earth w-100" asp-action="Leer" asp-route-id="@b.Id">📖 Leer en Book & Beet</a>}
+  else {<p class="small text-muted">Ficha gratuita. Edición digital pendiente de autorización o archivo.</p><a class="btn btn-outline-earth w-100" asp-action="Detalle" asp-route-id="@b.Id">Ver ficha</a>}
+  </div></article></div>
+}
+</div>
+@if(Model.LocalesGratis.Count==0){<div class="empty-message">No hay libros con precio cero que coincidan con tu búsqueda. Puedes añadirlos desde el panel administrador, con precio 0.</div>}
+<div class="admin-card mt-5"><div class="section-heading-row"><div><p class="eyebrow">CATÁLOGO EXTERNO · OPCIONAL</p><h2 class="section-title">Project <i>Gutenberg.</i></h2><p>Consulta ediciones gratuitas en línea si tienes Internet. Comprueba el estado de los derechos de la edición en tu país.</p></div></div>
+<form class="search-bar" method="get" asp-action="Gratis">
+ <input name="fuente" type="hidden" value="gutenberg" />
+ <input name="buscar" maxlength="90" value="@Model.Buscar" placeholder="Buscar en Gutenberg..." />
+ <select name="idioma" aria-label="Idioma de Gutenberg"><option value="es">Español</option><option value="en">Inglés</option><option value="todos">Todos</option></select>
+ <button class="btn btn-outline-earth" type="submit">Consultar Gutenberg</button>
+</form>
+@if(Model.MostrarGutenberg){
+ @if(Model.Aviso!=null){<div class="notice-pending mt-3">@Model.Aviso</div>}
+ <div class="row g-4 mt-1">@foreach(var b in Model.Libros){<div class="col-sm-6 col-lg-4 col-xl-3"><article class="book-card h-100">
+ <div class="online-cover">@if(!string.IsNullOrWhiteSpace(b.Portada)){<img src="@b.Portada" alt="Portada de @b.Titulo" loading="lazy"/>}else{<span>📚</span>}</div>
+ <div class="book-card-body"><span class="category">@b.Idioma · Acceso gratuito</span><h3>@b.Titulo</h3><p>@b.Autor</p>
+ @if(b.TextoUrl!=null){<a class="btn btn-earth w-100" asp-action="LeerGratis" asp-route-id="@b.Id">Leer aquí</a>}
+ <a class="inline-link mt-2" href="@b.Pagina" target="_blank" rel="noopener noreferrer">Fuente de la edición ↗</a>
+ </div></article></div>}</div>
+}
+</div></section>

@@ -1,0 +1,18 @@
+@model IEnumerable<Playlist>
+@{ ViewData["Title"]="Mis playlists"; }
+<section class="page-hero"><div class="shell"><p class="eyebrow">TU COLECCIÓN PERSONAL</p><h1>Mis <i>playlists.</i></h1><p>Guarda música original, audio libre y videos oficiales de YouTube. Reprodúcela sin salir de Book & Beet.</p></div></section>
+<section class="shell section-pad-sm"><form asp-action="CrearPlaylist" method="post" class="search-bar mb-5">@Html.AntiForgeryToken()<input type="text" name="Nombre" placeholder="Nueva playlist" maxlength="80" required/><button class="btn btn-earth" type="submit">+ Crear playlist</button></form><div class="row g-4">
+@foreach(var p in Model){<div class="col-lg-6"><article class="playlist-card"><div class="d-flex justify-content-between align-items-center gap-2"><div><p class="eyebrow">♫ COLECCIÓN</p><h3>@p.Nombre</h3><p>@p.Canciones.Count canción(es)</p></div><form asp-action="BorrarPlaylist" asp-route-id="@p.Id" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-earth btn-sm" type="submit" onclick="return confirm('¿Eliminar esta playlist?')">Eliminar</button></form></div>
+@foreach(var x in p.Canciones){<div class="playlist-song"><div><strong>@x.Cancion.Titulo</strong><small>@x.Cancion.Artista · @x.Cancion.Fuente</small>
+@if(x.Cancion.Fuente!="Apple"&&!string.IsNullOrWhiteSpace(x.Cancion.EnlaceOrigen)){<a class="inline-link" href="@x.Cancion.EnlaceOrigen" target="_blank" rel="noopener noreferrer">Fuente y licencia ↗</a>}</div>
+<div class="d-flex gap-2 align-items-center">
+@if(x.Cancion.Fuente=="YouTube" && System.Text.RegularExpressions.Regex.IsMatch(x.Cancion.IdExterno??"",@"^[A-Za-z0-9_-]{11}$")) { <button class="btn btn-outline-earth btn-sm" data-youtube-id="@x.Cancion.IdExterno" data-title="@x.Cancion.Titulo" type="button">▶ Escuchar aquí</button> }
+else if(x.Cancion.Fuente=="Apple") { <a asp-action="Index" asp-route-buscar="@(x.Cancion.Titulo+" "+x.Cancion.Artista)" class="btn btn-outline-earth btn-sm">Buscar versión reproducible</a> }
+else if(x.Cancion.Fuente=="Commons") { <button class="btn btn-outline-earth btn-sm" data-audio-url="@Url.Action("ReproducirOnline","Musica",new{id=x.CancionId})" data-title="@x.Cancion.Titulo" type="button">▶</button> }
+else { <button class="btn btn-outline-earth btn-sm" data-audio-url="@Url.Action("Escuchar","Musica",new{id=x.CancionId})" data-title="@x.Cancion.Titulo" type="button">▶</button> }
+<form asp-action="Quitar" method="post">@Html.AntiForgeryToken()<input type="hidden" name="playlistId" value="@p.Id"/><input type="hidden" name="cancionId" value="@x.CancionId"/><button class="btn btn-link text-danger btn-sm" type="submit">Quitar</button></form></div></div>}
+@if(!p.Canciones.Any()){<p class="text-muted small">Tu playlist está vacía. Busca canciones para agregarlas.</p>}
+<a class="inline-link" asp-action="Index">Buscar canciones →</a></article></div>}
+</div>@if(!Model.Any()){<div class="empty-message">Todavía no tienes playlists. ¡Crea la primera!</div>}
+<p class="reader-companion mt-4">Tu música seguirá sonando al abrir un libro. <button type="button" class="bb-inline-music" data-open-playlists>Mostrar mis playlists</button></p>
+</section>

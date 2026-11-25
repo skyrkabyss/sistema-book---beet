@@ -1,0 +1,41 @@
+@model LibroRenta
+@{ViewData["Title"]=Model.Titulo;bool acceso=ViewBag.Acceso==true;bool listo=ViewBag.Habilitado==true;string modo=ViewBag.Modo??"SANDBOX";}
+<section class="shell section-pad"><a asp-action="Index" class="inline-link">← Volver al catálogo</a><div class="row g-5 align-items-center mt-2"><div class="col-md-5"><div class="book-cover detail-cover cover-@((Model.Id%4)+1)"><span class="cover-mini">BOOK & BEET · EDICIÓN DIGITAL</span><strong>@Model.Titulo</strong><span>@Model.Autor</span></div></div><div class="col-md-7"><p class="eyebrow">@Model.Genero</p><h1 class="detail-title">@Model.Titulo</h1><p class="detail-author">@Model.Autor</p><p class="detail-description">@Model.Descripcion</p>
+@if(string.IsNullOrWhiteSpace(Model.RutaLectura)&&string.IsNullOrWhiteSpace(Model.UrlLectura)&&string.IsNullOrWhiteSpace(Model.ArchivoPdf)){<div class="alert alert-warning"><strong>Lectura no disponible.</strong> No alojamos ni cobramos el texto de esta edición porque falta acreditar los derechos de distribución. Puedes buscar una edición legal y gratuita en Project Gutenberg.</div><a class="btn btn-earth" asp-action="Gratis">Buscar libros gratuitos →</a>}
+else if(acceso){<div class="alert alert-success">@(Model.PrecioRenta==0?"Esta edición es de lectura gratuita.":"Tu alquiler está activo. Puedes leer la edición completa.")</div><a class="btn btn-earth" asp-action="Leer" asp-route-id="@Model.Id">📖 Abrir lector →</a>}
+else if(Model.PrecioRenta==0){<div class="alert alert-warning">Esta edición figura como gratuita, pero su lectura no está habilitada porque falta documentar los derechos de publicación. Contacta al administrador.</div>}
+else{<div class="detail-price">Bs @Model.PrecioRenta.ToString("0.00") <small>tarifa base por 7 días</small></div><p class="small text-muted">Derechos: @Model.Derechos</p>
+@if(string.IsNullOrWhiteSpace(Model.ArchivoPdf) && string.IsNullOrWhiteSpace(Model.RutaLectura)){<div class="notice-pending">Alquiler por tiempo no disponible para enlaces externos. El administrador debe cargar un PDF o texto interno autorizado.</div>}
+else if(listo){<div class="payment-box"><h3>Pago QR @(modo=="MANUAL"?"bancario":"· "+modo)</h3>
+@if(modo=="MANUAL") {<p>Verás un QR bancario auténtico. Después de pagar, comunica tu referencia de transferencia. La lectura solo se activa cuando un administrador confirme el abono en el banco.</p>}
+else {<p>El QR lo generará la pasarela. La lectura se habilita con su confirmación autenticada.</p>
+@if(modo!="PRODUCCION"){<div class="notice-pending">SANDBOX: el QR de pruebas no transfiere dinero real.</div>}}
+<form asp-controller="Alquileres" asp-action="Solicitar" method="post" class="admin-form alquiler-duracion-form">
+@Html.AntiForgeryToken()<input type="hidden" name="LibroId" value="@Model.Id"/><input type="hidden" name="Metodo" value="QR"/>
+<label for="duracionDias" class="fw-bold">¿Cuánto tiempo quieres alquilarlo?</label>
+<select class="form-control duracion-selector" id="duracionDias" name="DuracionDias" data-base-price="@(Model.PrecioRenta.ToString("0.00",System.Globalization.CultureInfo.InvariantCulture))" required>
+@foreach(int dias in GestorTareas.Services.TarifasAlquiler.OpcionesDias)
+{<option value="@dias" selected="@(dias==7)">@dias @(dias==1?"día":"días") — Bs @GestorTareas.Services.TarifasAlquiler.Calcular(Model.PrecioRenta,dias).ToString("0.00")</option>}
+</select>
+<p class="small text-muted">El importe queda fijado al generar la solicitud. Los días comienzan cuando se confirma el pago.</p>
+<button class="btn btn-earth" type="submit">@(modo=="MANUAL"?"Ver QR y confirmar importe →":"Generar QR →")</button></form></div>}
+else{<div class="notice-pending"><strong>QR no habilitado.</strong> El administrador debe cargar un QR bancario autorizado o configurar una pasarela.</div>}
+}
+</div></div></section>
+
+@{
+  var comentarios=ViewBag.Comentarios as List<ComentarioLibro>??new();
+  var valoraciones=ViewBag.Valoraciones as List<ValoracionLibro>??new();
+  int reservas=ViewBag.Reservas is int n ? n : 0;
+}
+<section class="shell section-pad-sm"><div class="row g-4"><div class="col-lg-6">
+<article class="admin-card"><h3>Reseñas y valoraciones</h3><p>@valoraciones.Count valoración(es) · @reservas reserva(s) registradas</p>
+<form asp-action="Valorar" method="post">@Html.AntiForgeryToken()<input type="hidden" name="libroId" value="@Model.Id"/>
+<label>Puntuación (1 a 5)</label><select name="puntuacion" class="form-control" required><option value="5">5 estrellas</option><option value="4">4 estrellas</option><option value="3">3 estrellas</option><option value="2">2 estrellas</option><option value="1">1 estrella</option></select>
+<label>Reseña opcional</label><textarea name="comentario" class="form-control" maxlength="1000"></textarea><button class="btn btn-earth mt-2">Publicar valoración</button></form>
+<form asp-action="Reservar" method="post" class="mt-3">@Html.AntiForgeryToken()<input type="hidden" name="libroId" value="@Model.Id"/><button class="btn btn-outline-earth">Reservar este título</button></form>
+@foreach(var v in valoraciones.Take(6)){<p class="mt-3">⭐ @v.Puntuacion/5 — @v.Comentario</p>}
+</article></div><div class="col-lg-6"><article class="admin-card"><h3>Comentarios</h3>
+<form asp-action="Comentar" method="post">@Html.AntiForgeryToken()<input type="hidden" name="libroId" value="@Model.Id"/><textarea name="texto" class="form-control" maxlength="1500" required placeholder="Escribe un comentario"></textarea><button class="btn btn-earth mt-2">Comentar</button></form>
+@foreach(var c in comentarios){<div class="mt-3"><strong>@c.Usuario.Nombre</strong> <small>@c.Fecha.ToString("dd/MM/yyyy")</small><p>@c.Texto</p></div>}
+</article></div></div></section>

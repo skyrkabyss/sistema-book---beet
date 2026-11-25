@@ -1,0 +1,43 @@
+@model Alquiler
+@using GestorTareas.Services
+@{ ViewData["Title"]="Pago por QR"; string modo=ViewBag.Modo??"SANDBOX";
+   var cuenta=ViewBag.DatosBanco as DatosQrBanco; bool manual=Model.Pago?.Proveedor=="BancoManual"; }
+<section class="shell section-pad-sm"><div class="qr-checkout">
+<p class="eyebrow">@(manual?"QR BANCARIO · VERIFICACIÓN MANUAL":"PAGO DIGITAL · "+modo)</p>
+<h1>Pago por QR</h1><h3>@Model.Libro.Titulo</h3>
+<p class="detail-price">Bs @Model.Pago?.Monto.ToString("0.00")</p>
+<p>Duración: <strong>@Model.DuracionDias días</strong>. El plazo empieza cuando el pago se confirma.</p>
+@if(Model.Pago?.Estado=="Pagado") {
+    <div class="alert alert-success">Pago confirmado. <a asp-controller="Libros" asp-action="Leer" asp-route-id="@Model.LibroId">Abrir libro</a></div>
+} else if(manual) {
+    @if(cuenta is null) {
+        <p class="alert alert-warning">El QR bancario no está disponible. Contacta al administrador antes de pagar.</p>
+    } else {
+        <img class="qr-graphic" alt="QR bancario autorizado para pago" asp-append-version="false" src="@Url.Action("ImagenQrManual","Alquileres")" />
+        <p>Entidad: <strong>@cuenta.Banco</strong></p>
+        <p>Titular autorizado: <strong>@cuenta.Titular</strong></p>
+        <p>Importe exacto: <strong>Bs @Model.Pago?.Monto.ToString("0.00")</strong></p>
+        <p class="small text-muted">Antes de transferir, revisa en tu aplicación bancaria que el beneficiario coincida. El QR es estático: verifica y escribe el monto correcto.</p>
+    }
+    @if(Model.Pago?.Estado=="Pendiente" && cuenta is not null){
+        <form asp-action="DeclararPagoManual" asp-route-id="@Model.Id" method="post" class="admin-form">
+            @Html.AntiForgeryToken()
+            <label for="referencia">Referencia o número de la transferencia realizada</label>
+            <input id="referencia" name="referencia" class="form-control" required minlength="4" maxlength="100" placeholder="Referencia que muestra tu banco" />
+            <button class="btn btn-earth" type="submit">Ya pagué · Solicitar verificación</button>
+        </form>
+    } else if(Model.Pago?.Estado=="EnRevision") {
+        <div class="alert alert-warning"><strong>En revisión.</strong> La referencia fue recibida. El administrador debe confirmar el ingreso en su banca antes de habilitar la lectura.</div>
+    } else if(Model.Pago?.Estado=="Rechazado") {
+        <div class="alert alert-warning">La solicitud fue rechazada. Consulta con el administrador si realizaste una transferencia; no se emiten reembolsos automáticos.</div>
+    }
+    <p class="small text-muted mt-3">Enviar una referencia o captura NO constituye confirmación de pago. No se liberará el libro automáticamente.</p>
+} else {
+    <img class="qr-graphic" alt="QR proporcionado por la pasarela" src="data:image/png;base64,@Model.Pago?.QrImagenBase64"/>
+    <p>Escanéalo con tu aplicación bancaria.</p>
+    @if(modo!="PRODUCCION"){<div class="notice-pending">SANDBOX: QR de prueba; no transfiere dinero real.</div>}
+    <p>Válido hasta (UTC): @Model.Pago?.QrVenceEn?.ToString("yyyy-MM-dd HH:mm")</p>
+    <p>La confirmación llegará únicamente mediante el webhook autenticado.</p>
+}
+<a asp-action="Index" class="btn btn-outline-earth mt-3">Mis alquileres</a>
+</div></section>

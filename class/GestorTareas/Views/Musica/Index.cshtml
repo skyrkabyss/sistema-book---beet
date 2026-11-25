@@ -1,0 +1,34 @@
+@model MusicaVista
+@{ ViewData["Title"]="Música en línea"; var login=User.Identity?.IsAuthenticated==true;
+   var liked=ViewBag.MisMeGusta as List<int> ?? new List<int>(); }
+<section class="page-hero music-page-hero"><div class="shell"><p class="eyebrow">BOOK & BEET EN LÍNEA</p><h1>Tu música, tus <i>playlists.</i></h1>
+<p>Busca canciones y escúchalas aquí, sin salir a Apple Music: videos con el reproductor oficial de YouTube, audio libre de Wikimedia y música original. Guarda pistas en tus playlists.</p></div></section>
+<section class="shell section-pad-sm">
+<form method="get" class="search-bar"><input name="buscar" value="@Model.Buscar" type="search" maxlength="90" placeholder="Artista, canción o género..." aria-label="Buscar música en línea" required/><button class="btn btn-earth">Buscar música ↗</button></form>
+<div class="section-heading-row mt-5"><div><p class="eyebrow">COLECCIÓN LOCAL</p><h2 class="section-title">Ambiente de <i>lectura</i></h2></div>
+@if(login){<a class="inline-link" asp-action="Playlists">Mis playlists →</a>}else{<a class="inline-link" asp-controller="Cuenta" asp-action="Registro">Crear cuenta gratis →</a>}</div>
+<div class="track-list">
+@foreach(var c in Model.Locales){<article class="track-row"><div class="track-art">♫</div><div class="track-info"><h3>@c.Titulo</h3><p>@c.Artista · @(c.Licencia?.Contains("Original / publicación autorizada")==true?"Estreno original · publicación autorizada":"Audio del catálogo")</p></div><div class="track-actions">
+<button type="button" class="btn btn-outline-earth btn-sm" data-audio-url="@Url.Action("Escuchar","Musica",new{id=c.Id})" data-track-title="@c.Titulo" data-artist="@c.Artista">▶ Escuchar aquí</button>
+@if(login){
+<form asp-action="AlternarMeGusta" method="post">@Html.AntiForgeryToken()<input type="hidden" name="cancionId" value="@c.Id"/><button type="submit" class="btn btn-outline-earth btn-sm">@(liked.Contains(c.Id)?"♥ Me gusta":"♡ Me gusta")</button></form>
+@if(Model.Playlists.Count>0){<form asp-action="Agregar" method="post" class="add-track-form">@Html.AntiForgeryToken()<input type="hidden" name="cancionId" value="@c.Id"/><select name="playlistId" aria-label="Playlist">@foreach(var p in Model.Playlists){<option value="@p.Id">@p.Nombre</option>}</select><button type="submit" class="btn btn-earth btn-sm">+ Añadir</button></form>}}
+else{<a class="inline-link" asp-controller="Cuenta" asp-action="Registro">Regístrate para guardar ♥</a>}</div></article>}
+</div>
+@if(!string.IsNullOrWhiteSpace(Model.Buscar)){
+<div class="section-heading-row mt-5"><div><p class="eyebrow">WIKIMEDIA COMMONS</p><h2 class="section-title">Audio de <i>licencia libre</i></h2><p>Archivos de audio disponibles bajo licencias abiertas; verifica las condiciones y atribuciones de cada fuente.</p></div></div>
+<div class="track-list">
+@foreach(var s in Model.Libres){<article class="track-row"><div class="track-art">♬</div><div class="track-info"><h3>@s.Titulo</h3><p>@s.Artista · @s.Licencia</p><a href="@s.UrlOrigen" target="_blank" rel="noopener noreferrer" class="inline-link">Ficha, autor y licencia ↗</a></div><div class="track-actions">
+<button type="button" class="btn btn-outline-earth btn-sm" data-audio-url="@s.UrlEscucha" data-track-title="@s.Titulo">▶ Escuchar aquí</button>
+@if(login){
+@if(Model.Playlists.Count>0){<form asp-action="AgregarOnline" method="post" class="add-track-form">@Html.AntiForgeryToken()<input type="hidden" name="fuente" value="Commons"/><input type="hidden" name="idExterno" value="@s.IdExterno"/><select name="playlistId" aria-label="Playlist">@foreach(var p in Model.Playlists){<option value="@p.Id">@p.Nombre</option>}</select><button class="btn btn-earth btn-sm">+ Añadir</button></form>}}
+else{<a class="inline-link" asp-controller="Cuenta" asp-action="Registro">Regístrate para guardar</a>}</div></article>}
+</div>
+<div class="section-heading-row mt-5"><div><p class="eyebrow">YOUTUBE · INTEGRACIÓN OFICIAL</p><h2 class="section-title">Música desde <i>YouTube</i></h2><p>Resultados obtenidos de YouTube Data API y reproducidos en el iframe oficial, sin descargar ni extraer audio.</p></div></div>
+@if(!Model.YoutubeConfigurado){<div class="notice-pending">Para buscar música conocida y reproducirla aquí mediante YouTube, configura YouTube:ApiKey en el servidor. Los audios originales y de Commons se escuchan sin clave.</div>}
+<div class="track-list">@foreach(var s in Model.Youtube){<article class="track-row"><div class="track-art">▶</div><div class="track-info"><h3>@s.Titulo</h3><p>@s.Artista · YouTube</p><small class="source-note">Video del canal de origen · reproductor oficial integrado</small></div><div class="track-actions"><button type="button" class="btn btn-outline-earth btn-sm" data-youtube-id="@s.IdExterno" data-track-title="@s.Titulo">▶ Escuchar aquí</button>
+@if(login&&Model.Playlists.Count>0){<form asp-action="AgregarOnline" method="post" class="add-track-form">@Html.AntiForgeryToken()<input type="hidden" name="fuente" value="YouTube"/><input type="hidden" name="idExterno" value="@s.IdExterno"/><select name="playlistId" aria-label="Playlist">@foreach(var p in Model.Playlists){<option value="@p.Id">@p.Nombre</option>}</select><button class="btn btn-earth btn-sm">+ Añadir</button></form>}</div></article>}</div>
+@if(Model.Libres.Count==0&&Model.Youtube.Count==0){<div class="empty-message">@(Model.Aviso??"Sin resultados externos")</div>}
+}
+<div class="reader-companion mt-4"><strong>♫ Música mientras lees:</strong> abre cualquier libro desde el menú superior. El reproductor se mantiene activo y puedes elegir canciones con <button type="button" class="bb-inline-music" data-open-playlists>Mis playlists</button>.</div>
+</section>

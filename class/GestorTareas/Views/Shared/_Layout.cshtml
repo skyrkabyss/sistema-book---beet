@@ -1,0 +1,71 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+<!DOCTYPE html>
+<html lang="es">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1" />
+ <meta name="theme-color" content="#f5ece1" />
+ <title>@ViewData["Title"] · Book & Beet</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+ <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+ <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+ <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="top-ribbon"><div class="shell d-flex justify-content-between"><span>✦ Historias que se escuchan, música que se lee.</span><span class="d-none d-sm-inline">Tu rincón de lectura · Bolivia</span></div></div>
+<header class="site-header"><nav class="shell navbar navbar-expand-lg navbar-light py-3">
+ <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark">❧</span> BOOK <span>&amp; BEET</span><small>LIBROS &amp; MÚSICA</small></a>
+ <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Abrir menú"><span class="navbar-toggler-icon"></span></button>
+ <div class="collapse navbar-collapse" id="mainNav"><ul class="navbar-nav mx-auto gap-lg-3">
+   <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Inicio</a></li>
+   <li class="nav-item"><a class="nav-link" asp-controller="Libros" asp-action="Index">Libros</a></li><li class="nav-item"><a class="nav-link" asp-controller="Libros" asp-action="Gratis">Leer gratis</a></li>
+   <li class="nav-item"><a class="nav-link" asp-controller="Musica" asp-action="Index">Música</a></li>
+   @if(SignInManager.IsSignedIn(User)) {
+    <li class="nav-item"><a class="nav-link" asp-controller="Alquileres" asp-action="Index">Mis alquileres</a></li>
+    <li class="nav-item"><a class="nav-link" asp-controller="Musica" asp-action="Playlists">Mis playlists</a></li>
+    @if(User.IsInRole("Admin")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Index">Administración</a></li><li class="nav-item"><a class="nav-link" asp-controller="Estadisticas" asp-action="Index">Estadísticas</a></li> }
+   }
+ </ul><div class="nav-actions">
+ @if(SignInManager.IsSignedIn(User)) {
+   <span class="hello-user">Hola, @((await UserManager.GetUserAsync(User))?.Nombre)</span>
+   <form asp-controller="Cuenta" asp-action="Salir" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-earth btn-sm" type="submit">Salir</button></form>
+ } else { <span class="guest-pill">Modo invitado</span><a class="btn btn-earth btn-sm" asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a> }
+ </div></div>
+</nav></header>
+<main id="bbPageContent">
+@if(TempData["Mensaje"] is string success) { <div class="shell mt-3"><div class="alert alert-success" role="status">@success</div></div> }
+@if(TempData["Error"] is string error) { <div class="shell mt-3"><div class="alert alert-danger" role="alert">@error</div></div> }
+@RenderBody()
+</main>
+<!-- Book & Beet 6: este reproductor NO está dentro de main; no se destruye al navegar. -->
+<aside id="bbGlobalPlayer" class="bb-global-player" hidden aria-label="Reproductor continuo de Book & Beet">
+ <div class="bb-player-head">
+  <span class="bb-player-icon" aria-hidden="true">♫</span>
+  <div class="bb-player-track"><strong id="bbNowPlaying">Tu música</strong><small id="bbNowSource">Book & Beet · Escucha mientras lees</small></div>
+  <button type="button" class="bb-player-button" id="bbPlayerPrevious" title="Canción anterior" aria-label="Canción anterior">◀◀</button>
+  <button type="button" class="bb-player-button" id="bbPlayerNext" title="Siguiente canción" aria-label="Siguiente canción">▶▶</button>
+  <button type="button" class="bb-player-button" data-open-playlists title="Mis playlists" aria-label="Mostrar mis playlists">☷</button>
+  <button type="button" class="bb-player-button" id="bbPlayerStop" title="Detener la música" aria-label="Detener la música">✕</button>
+ </div>
+ <audio id="bbContinuousAudio" controls preload="none" aria-label="Audio continuo"></audio>
+ <div class="bb-youtube-frame" id="bbYoutubeFrameBox" hidden>
+  <iframe id="bbContinuousYouTube" src="about:blank" title="Reproductor oficial de YouTube" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+ </div>
+</aside>
+<aside id="bbPlaylistDrawer" class="bb-playlist-drawer" hidden role="dialog" aria-modal="false" aria-labelledby="bbPlaylistHeading">
+ <div class="bb-drawer-title"><div><small>LECTURA + MÚSICA</small><h2 id="bbPlaylistHeading">Tus playlists</h2></div><button class="bb-player-button" type="button" id="bbClosePlaylists" aria-label="Cerrar playlists">✕</button></div>
+ <p class="bb-drawer-help">Elige una lista y una canción. La lectura continuará abierta.</p>
+ <label for="bbPlaylistSelect">Playlist</label>
+ <select id="bbPlaylistSelect" class="form-select mb-3"></select>
+ <div id="bbPlaylistSongs" class="bb-playlist-songs" aria-live="polite">Abre el panel para cargar tus playlists.</div>
+ <div id="bbPlaylistStatus" class="small mt-3" role="status"></div>
+</aside>
+<div class="bb-drawer-scrim" id="bbPlaylistScrim" hidden></div>
+<footer class="site-footer"><div class="shell footer-grid"><div><div class="brand brand-footer">❧ BOOK <span>&amp; BEET</span></div><p>Un espacio para descubrir libros, crear playlists y disfrutar de tardes de otoño.</p></div><div><h6>Descubre</h6><a asp-controller="Libros" asp-action="Index">Catálogo de libros</a><a asp-controller="Musica" asp-action="Index">Biblioteca musical</a></div><div><h6>Tu cuenta</h6><a asp-controller="Cuenta" asp-action="Login">Iniciar sesión</a><a asp-controller="Cuenta" asp-action="Registro">Crear cuenta</a></div></div><div class="footer-bottom shell">© 2026 Book & Beet · Proyecto académico en ASP.NET Core &amp; MySQL. Música de terceros según licencia; pagos QR sujetos a verificación bancaria y autorización del titular.</div></footer>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required:false)
+</body></html>

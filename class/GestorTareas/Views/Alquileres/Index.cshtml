@@ -1,0 +1,11 @@
+@model IEnumerable<Alquiler>
+@{ViewData["Title"]="Mis alquileres";}
+<section class="page-hero"><div class="shell"><p class="eyebrow">TU BIBLIOTECA</p><h1>Mis <i>alquileres.</i></h1><p>Consulta los pagos QR y lee los libros digitales con acceso confirmado.</p></div></section>
+<section class="shell section-pad-sm"><div class="row g-4">@foreach(var a in Model){<div class="col-lg-6"><article class="playlist-card"><p class="eyebrow">SOLICITUD DE ALQUILER</p><h3>@a.Libro.Titulo</h3><p>Estado: <strong>@(a.Estado=="Activo" && a.VenceEn<=DateTime.UtcNow?"Vencido":a.Estado)</strong></p><p>Duración contratada: <strong>@a.DuracionDias días</strong></p><p>Método: @a.Pago?.Metodo · Bs @a.Pago?.Monto.ToString("0.00") · Pago: @a.Pago?.Estado</p>
+@if(a.Estado=="Activo"&&a.VenceEn>DateTime.UtcNow){<p>Acceso hasta: @a.VenceEn?.ToString("dd/MM/yyyy HH:mm") UTC</p><a asp-controller="Libros" asp-action="Leer" asp-route-id="@a.LibroId" class="btn btn-earth">📖 Leer ahora</a>}
+else if(a.Estado=="PendientePago" && a.Pago is not null && (a.Pago.Proveedor=="BancoManual" || a.Pago.QrImagenBase64 is not null)){<a asp-action="PagarQr" asp-route-id="@a.Id" class="btn btn-earth">Ver QR y estado →</a><p class="notice-pending">@(a.Pago.Proveedor=="BancoManual" ? "El administrador debe verificar el abono bancario." : "El proveedor debe confirmar el cobro.")</p>}
+else{<p class="notice-pending">@(a.Estado=="Activo" && a.VenceEn<=DateTime.UtcNow ? "El período contratado terminó. Ya no puedes acceder a este libro; puedes solicitar otro alquiler." : "No hay un alquiler activo con pago confirmado.")</p>}
+@if(a.Estado=="PendientePago" && a.Pago?.Estado=="Pendiente" && string.IsNullOrWhiteSpace(a.Pago.QrId))
+{<form asp-action="Cancelar" asp-route-id="@a.Id" method="post" class="mt-2">@Html.AntiForgeryToken()<button type="submit" class="btn btn-outline-earth btn-sm">Cancelar solicitud y elegir otra duración</button></form>}
+</article></div>}</div>
+@if(!Model.Any()){<div class="empty-message">Aún no tienes alquileres. <a asp-controller="Libros" asp-action="Gratis">Puedes leer libros gratuitos ahora.</a></div>}</section>

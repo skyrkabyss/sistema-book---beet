@@ -1,0 +1,32 @@
+@model LibroRenta
+@using GestorTareas.Services
+@{ ViewData["Title"]="Editar libro";var qr=ViewBag.QrManual as DatosQrBanco; }
+<section class="page-hero"><div class="shell"><p class="eyebrow">PANEL ADMINISTRATIVO</p><h1>Editar <i>libro.</i></h1><p>Modifica datos, precio por siete días, PDF autorizado y disponibilidad.</p></div></section>
+<section class="shell section-pad-sm">
+<a asp-action="Index" class="inline-link">← Volver a Administración</a>
+<div class="row g-4 mt-2"><div class="col-xl-8"><div class="admin-card">
+<h2>@Model.Titulo</h2><p class="small text-muted">Los alquileres ya solicitados conservan el importe y plazo originales.</p>
+<form asp-action="EditarLibro" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="admin-form">
+@Html.AntiForgeryToken()
+<label>Título</label><input class="form-control" name="titulo" maxlength="120" required value="@Model.Titulo"/>
+<label>Autor</label><input class="form-control" name="autor" maxlength="100" required value="@Model.Autor"/>
+<label>Género</label><input class="form-control" name="genero" maxlength="50" required value="@Model.Genero"/>
+<label>Descripción</label><textarea class="form-control" name="descripcion" maxlength="600">@Model.Descripcion</textarea>
+<label>Precio base en Bs por 7 días (0 = lectura gratuita)</label>
+<input class="form-control" name="precioRenta" type="text" inputmode="decimal" maxlength="7" pattern="[0-9]+([.,][0-9]{1,2})?" value="@(Model.PrecioRenta.ToString("0.00",System.Globalization.CultureInfo.InvariantCulture))" required/>
+<p class="small text-muted">Ejemplo: 7,50 o 7.50 = Bs 7,50. No uses separadores de miles.</p>
+<label>Derechos/licencia de distribución</label><input class="form-control" name="derechos" maxlength="100" required value="@Model.Derechos"/>
+<label>Reemplazar PDF (opcional; máximo 25 MB)</label><input class="form-control" type="file" name="pdf" accept=".pdf,application/pdf"/>
+<p class="small text-muted">@(!string.IsNullOrWhiteSpace(Model.ArchivoPdf)?"Este libro ya tiene PDF. Si no subes otro, se conserva.":"No hay un PDF actualmente guardado.")</p>
+<label>URL externa de lectura (solo para libros gratuitos)</label><input class="form-control" type="url" name="urlLectura" maxlength="2048" value="@(Model.ArchivoPdf is null && Model.UrlLectura?.StartsWith("https://")==true?Model.UrlLectura:"")" placeholder="https://..."/>
+<label class="small"><input type="checkbox" name="quitarPdf" value="true"/> Quitar el PDF de la ficha (su archivo se conserva como respaldo)</label>
+<label class="small"><input type="checkbox" name="derechosConfirmados" value="true" required/> Tengo autorización para publicar esta edición y cobrar si corresponde.</label>
+<button class="btn btn-earth" type="submit">Guardar cambios del libro</button>
+</form></div></div>
+<div class="col-xl-4"><div class="admin-card"><h3>QR de cobro</h3>
+<p>El QR bancario es común a todos los libros, ya que el importe varía con la duración.</p>
+@if(qr is not null){<p><strong>@qr.Banco</strong><br/>@qr.Titular</p>}
+else{<p class="notice-pending">No hay QR configurado.</p>}
+<a asp-action="Index" asp-fragment="qr-bancario" class="btn btn-outline-earth">Cambiar QR bancario</a>
+</div><div class="admin-card mt-3"><h3>Acceso tras vencimiento</h3><p>Los PDF y textos internos requieren una renta activa al abrirse. Para libros de pago no se permiten enlaces externos que no puedan caducar.</p></div></div></div>
+</section>

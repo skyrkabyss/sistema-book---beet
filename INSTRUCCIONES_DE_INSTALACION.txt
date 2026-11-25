@@ -1,0 +1,78 @@
+BOOK & BEET 7.1 — INSTRUCCIONES SIMPLES (WINDOWS)
+====================================================
+
+ESTE ARCHIVO YA ES EL PROYECTO COMPLETO. No instales los parches anteriores.
+
+PASO 1: RESPALDA
+- Conserva la carpeta que usabas antes; NO la borres.
+- En phpMyAdmin selecciona bibliobeat_diagrama > Exportar > SQL y guarda la copia.
+- No vuelvas a importar la base inicial, pues podrias perder tus datos.
+
+PASO 2: DESCOMPRIME EN UNA CARPETA NUEVA
+- Haz clic derecho en el ZIP > Extraer todo.
+- Abre la carpeta extraida en VS Code.
+- Debes ver class, ejecutar.bat y LEEME_PRIMERO.txt al mismo nivel.
+- NO debe quedar una carpeta BDS dentro de otra BDS.
+
+PASO 3: CONFIGURA LA CONEXION MYSQL
+- Si tu app anterior funcionaba, COPIA SU ARCHIVO appsettings.json
+  desde la carpeta antigua class\GestorTareas\appsettings.json
+  hacia la carpeta nueva class\GestorTareas\appsettings.json.
+- Si no tienes configuracion previa, edita el nuevo appsettings.json:
+  ConnectionStrings.DefaultConnection debe apuntar a bibliobeat_diagrama
+  con el usuario bb_app y la contrasena que configuraste en MySQL.
+- No publiques tu archivo appsettings.json con la contrasena.
+- Si usas appsettings.Development.json o variables de entorno para la conexion,
+  revisalas porque tienen prioridad frente a appsettings.json.
+
+PASO 4: CONSERVA TUS ARCHIVOS PROPIOS
+- MySQL guarda los registros, pero los PDFs, canciones y QR pueden estar
+  almacenados como archivos en PrivateBooks, PrivateAudio y PrivatePayments.
+- Si subiste PDFs o canciones en tu version anterior, copia esos archivos
+  desde esas carpetas ANTIGUAS a las correspondientes de la carpeta NUEVA,
+  sin borrar los archivos que ya tenga la nueva carpeta.
+- No subas contenido protegido por derechos de autor sin autorizacion.
+
+PASO 5: ACTUALIZA SQL SOLO SI NO LO HICISTE ANTES
+- phpMyAdmin > bibliobeat_diagrama > SQL:
+  ALTER TABLE alquiler_libros ADD COLUMN IF NOT EXISTS duracion_dias INT NOT NULL DEFAULT 7;
+- Si ya lo ejecutaste antes, puedes OMITIR este paso.
+- NO ejecutes los archivos antiguos de reinicializacion de base de datos.
+
+PASO 6: EJECUTA LA APP
+- Asegurate de que XAMPP > MySQL este encendido.
+- En esta carpeta, abre la terminal de VS Code y ejecuta:
+  dotnet run --project ".\class\GestorTareas\GestorTareas.csproj" --launch-profile http
+- O haz doble clic en ejecutar.bat.
+- El puerto aparece en la terminal despues de 'Now listening on'.
+
+API DE YOUTUBE (SI USAS BUSQUEDA DE MUSICA)
+- Desde esta carpeta, en PowerShell:
+  dotnet user-secrets init --project ".\class\GestorTareas\GestorTareas.csproj"
+  dotnet user-secrets set "YouTube:ApiKey" "TU_API_KEY" --project ".\class\GestorTareas\GestorTareas.csproj"
+- No compartas tu API key. Si es una nueva carpeta/proyecto, puede que
+  tengas que volver a configurar user-secrets.
+
+CORRECCION DE DECIMALES
+- En Administracion, pon 7,50 o 7.50 para guardar Bs 7,50 / 7 dias.
+- Si Flipped ya quedo guardado como Bs 750,00 en MySQL, cambia SOLO ese libro:
+  UPDATE libros SET precio_renta = 7.50
+  WHERE titulo = 'Flipped' AND autor = 'Wendelin Van Draanen'
+    AND precio_renta = 750.00;
+- Esto corrige el precio del catalogo; no modifica pagos ya creados.
+
+COBROS QR
+- Con el QR bancario manual, solo el admin debe aprobar tras verificar
+  en el banco que el dinero realmente se recibio. No confies solo en capturas.
+- Para cobrar necesitas autorizacion del titular de la cuenta y cumplir
+  los requisitos legales y bancarios aplicables.
+
+FUNCIONES INCLUIDAS
+- Marca Book & Beet; lectura de libros; editar libros; publicar MP3/WAV.
+- QR manual; seleccionar 1,3,7,14 o 30 dias de alquiler; vencimiento
+  verificado por el servidor; playlists; YouTube Data API opcional.
+
+ESTADO DE PRUEBA
+- Los archivos han sido inspeccionados e integrados; no se ha podido
+  ejecutar dotnet build/MySQL en este entorno. Comprueba la compilacion y
+  realiza pruebas de alquiler antes de aceptar dinero real.

@@ -1,0 +1,55 @@
+@model IEnumerable<Alquiler>
+@using GestorTareas.Services
+@{ ViewData["Title"]="Administración";
+   var libros=ViewBag.Libros as List<LibroRenta> ?? new List<LibroRenta>();
+   var canciones=ViewBag.Canciones as List<Cancion> ?? new List<Cancion>();
+   var usuarios=ViewBag.Usuarios as List<AppUser> ?? new List<AppUser>();
+   var cuenta=ViewBag.QrManual as DatosQrBanco; }
+<section class="page-hero"><div class="shell"><p class="eyebrow">ACCESO ADMINISTRATIVO</p><h1>Panel de <i>control.</i></h1><p>Gestión de catálogo, música, usuarios y estados de pago QR bancarios y pasarela.</p></div></section>
+<section class="shell section-pad-sm admin-page"><div class="admin-summary"><div><small>Libros</small><strong>@libros.Count</strong></div><div><small>Canciones</small><strong>@canciones.Count</strong></div><div><small>Usuarios</small><strong>@usuarios.Count</strong></div><div><small>Solicitudes pendientes</small><strong>@Model.Count(a=>a.Estado=="PendientePago")</strong></div></div>
+<div class="admin-card mt-3"><a class="btn btn-earth btn-sm mb-3" asp-controller="Estadisticas" asp-action="Index">📊 Abrir Probabilidad y Estadística</a><p><strong>Tablas del diagrama:</strong> Reservas: @ViewBag.TotalReservas · Comentarios: @ViewBag.TotalComentarios · Me gusta: @ViewBag.TotalLikes. Los registros se almacenan en la base bibliobeat_diagrama.</p></div>
+<div class="row g-4"><div class="col-xl-6"><div class="admin-card"><h3>+ Nuevo libro · PDF o URL</h3><p class="small text-muted">Las subidas se guardan fuera de wwwroot; el lector comprueba el acceso. Los clásicos pueden tener traducciones con derechos vigentes.</p><form asp-action="CrearLibroDigital" method="post" enctype="multipart/form-data" class="admin-form">@Html.AntiForgeryToken()<input class="form-control" name="Titulo" required maxlength="120" placeholder="Título"/><input class="form-control" name="Autor" required maxlength="100" placeholder="Autor"/><input class="form-control" name="Genero" required maxlength="50" placeholder="Género"/><textarea class="form-control" name="Descripcion" maxlength="600" placeholder="Descripción"></textarea><label class="small fw-bold">Archivo PDF autorizado (máximo 25 MB)</label><input class="form-control" type="file" name="Pdf" accept="application/pdf,.pdf"/><label class="small fw-bold">O URL HTTPS de lectura legal</label><input class="form-control" type="url" name="UrlLectura" maxlength="2048" placeholder="https://sitio-autorizado/lectura"/><input class="form-control" name="Derechos" maxlength="100" required placeholder="Titular/licencia de distribución (obligatorio)"/><label class="small"><input type="checkbox" name="DerechosConfirmados" value="true" required/> Confirmo que tengo autorización para ofrecer esta edición en línea y cobrar si corresponde</label><label class="small fw-bold">Precio en Bs por 7 días (ej. 7,50 o 7.50)</label><input class="form-control" type="text" inputmode="decimal" name="PrecioRenta" maxlength="7" pattern="[0-9]+([.,][0-9]{1,2})?" value="0.00" required placeholder="Precio Bs (0 = gratis)"/><button class="btn btn-earth" type="submit">Guardar libro</button></form></div></div><div class="col-xl-6"><div class="admin-card"><h3>♫ Publicar canción propia</h3>
+<p class="small text-muted">Sube un MP3 o WAV original, máximo 20 MB. Aparecerá en Música, disponible para escuchar y agregar a playlists.</p>
+<form asp-action="SubirCancion" method="post" enctype="multipart/form-data" class="admin-form">
+@Html.AntiForgeryToken()
+<input class="form-control" name="titulo" maxlength="110" required placeholder="Nombre de la canción"/>
+<input class="form-control" name="artista" maxlength="100" required placeholder="Artista o banda"/>
+<input class="form-control" name="genero" maxlength="50" required placeholder="Género"/>
+<label class="fw-bold">Archivo de audio MP3 / WAV</label>
+<input class="form-control" name="audio" type="file" accept="audio/mpeg,audio/mp3,audio/wav,.mp3,.wav" required/>
+<label class="small"><input type="checkbox" name="derechosConfirmados" value="true" required /> Soy el titular o tengo permiso para publicar y promocionar este audio.</label>
+<button class="btn btn-earth" type="submit">♫ Publicar canción</button>
+</form></div></div></div>
+<div class="admin-card mt-4"><h3 id="qr-bancario">Configurar o cambiar QR bancario · confirmación manual</h3>
+<p>Sube únicamente el QR oficial de una cuenta bancaria cuyo titular autorice recibir pagos por esta actividad. El banco debe permitir el uso correspondiente. Este QR se aplica a todos los libros; el precio exacto cambia según la duración. La imagen se guarda fuera de <code>wwwroot</code>.</p>
+@if(cuenta is not null){<div class="alert alert-success">QR configurado: <strong>@cuenta.Titular</strong> · @cuenta.Banco. <a asp-controller="Alquileres" asp-action="ImagenQrManual" target="_blank" rel="noopener">Ver imagen</a></div>}
+else{<p class="notice-pending">Aún no hay un QR bancario configurado. Los pagos manuales no están habilitados.</p>}
+<form asp-action="ConfigurarQrBancario" method="post" enctype="multipart/form-data" class="admin-form">
+@Html.AntiForgeryToken()
+<label>Entidad bancaria</label><input class="form-control" name="banco" maxlength="100" required placeholder="Nombre del banco" value="@cuenta?.Banco" />
+<label>Nombre del titular que aparecerá en el banco</label><input class="form-control" name="titular" maxlength="120" required placeholder="Titular de cuenta" value="@cuenta?.Titular" />
+<label>Imagen oficial del QR bancario (PNG, máximo 1 MB)</label><input class="form-control" type="file" name="archivo" accept="image/png,.png" required />
+<label class="small"><input type="checkbox" name="autorizacionConfirmada" value="true" required /> Tengo autorización del titular y el banco permite este tipo de cobros.</label>
+<button class="btn btn-earth" type="submit">Guardar QR autorizado</button></form>
+</div>
+<div class="admin-card mt-4"><h3>Solicitudes y pagos</h3>
+<p class="notice-pending">En pagos bancarios manuales, confirma solamente tras comprobar en la aplicación o extracto bancario el ingreso real, importe, destinatario y referencia. Una captura o declaración del cliente no es prueba suficiente.</p>
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Usuario</th><th>Libro</th><th>Proveedor</th><th>Importe</th><th>Plazo</th><th>Estado</th><th>Acción</th></tr></thead><tbody>
+@foreach(var a in Model){<tr><td>@a.Usuario.Nombre <small>@a.Usuario.Email</small></td><td>@a.Libro.Titulo</td><td>@a.Pago?.Proveedor</td><td>Bs @(a.Pago?.Monto.ToString("0.00") ?? "—")</td><td>@a.DuracionDias días</td><td>@(a.Estado=="Activo" && a.VenceEn<=DateTime.UtcNow?"Vencido":a.Estado) / @a.Pago?.Estado</td><td>
+@if(a.Pago?.Proveedor=="BancoManual" && a.Estado=="PendientePago" && a.Pago.Estado=="EnRevision"){
+  <p>Referencia declarada: <strong>@a.Pago.Referencia</strong></p>
+  <form asp-action="ConfirmarPagoManual" asp-route-id="@a.Id" method="post" class="admin-form">
+  @Html.AntiForgeryToken()
+  <label>Referencia REAL verificada en el banco</label><input name="referenciaBancaria" class="form-control" minlength="4" maxlength="120" required placeholder="Código del movimiento recibido" />
+  <label class="small"><input type="checkbox" name="confirmoIngreso" value="true" required /> Verifiqué en el banco el importe exacto, el destinatario y esta operación.</label>
+  <button class="btn btn-earth btn-sm" type="submit">Confirmar pago y habilitar @a.DuracionDias días</button></form>
+  <form asp-action="RechazarPagoManual" asp-route-id="@a.Id" method="post" class="mt-2">@Html.AntiForgeryToken()<button class="btn btn-outline-earth btn-sm" type="submit">Rechazar solicitud</button></form>
+}
+else if(a.Pago?.Proveedor=="BancoManual" && a.Pago?.Estado=="Pendiente"){<small>Esperando aviso del usuario.</small>}
+else if(a.Pago?.Proveedor=="WizPay"){<small>Solo webhook autenticado.</small>}
+else{<small>Sin acción pendiente.</small>}
+</td></tr>}
+</tbody></table></div></div>
+<div class="row g-4 mt-1"><div class="col-lg-6"><div class="admin-card"><h3>Catálogo de libros</h3>@foreach(var l in libros){<div class="manage-row"><span>@l.Titulo <small>Bs @l.PrecioRenta.ToString("0.00") / 7 días · @(l.Activo?"Visible":"Oculto")</small></span><a asp-action="EditarLibro" asp-route-id="@l.Id" class="btn btn-earth btn-sm">Editar</a><form asp-action="CambiarLibro" asp-route-id="@l.Id" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-earth btn-sm">@(l.Activo?"Ocultar":"Mostrar")</button></form></div>}</div></div><div class="col-lg-6"><div class="admin-card"><h3>Catálogo musical</h3>@foreach(var c in canciones){<div class="manage-row"><span>@c.Titulo <small>@(c.Activa?"Visible":"Oculta")</small></span><form asp-action="CambiarCancion" asp-route-id="@c.Id" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-earth btn-sm">@(c.Activa?"Ocultar":"Mostrar")</button></form></div>}</div></div></div>
+<div class="admin-card mt-4"><h3>Usuarios registrados</h3><p class="small text-muted">Los identificadores internos se mantienen en MySQL, pero no se muestran aquí.</p><div class="table-responsive"><table class="table"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th></tr></thead><tbody>@foreach(var u in usuarios){<tr><td>@u.Nombre @u.Apellido</td><td>@u.Email</td><td>@u.Rol</td></tr>}</tbody></table></div></div>
+</section>

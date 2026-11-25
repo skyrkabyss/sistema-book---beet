@@ -1,0 +1,4 @@
+@model LecturaVista
+@{ViewData["Title"]="Leer: "+Model.Titulo;}
+<section class="shell section-pad-sm"><div class="reader-header"><p class="eyebrow">BOOK & BEET · LECTOR DIGITAL</p><h1>@Model.Titulo</h1><p>@Model.Autor</p><small>@Model.Origen</small><div class="reader-tools"><button class="btn btn-outline-earth btn-sm" id="smaller" type="button">A−</button><button class="btn btn-outline-earth btn-sm" id="larger" type="button">A+</button><a asp-action="Gratis" class="inline-link">Biblioteca gratuita ↗</a><button class="btn btn-earth btn-sm" type="button" data-open-playlists>♫ Mis playlists · Elegir canción</button></div></div>
+<div class="reader-paper"><article id="readerText" class="reader-text">@Model.Texto</article></div></section>

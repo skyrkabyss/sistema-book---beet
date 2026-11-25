@@ -1,0 +1,43 @@
+@model EstadisticasVista
+@{ ViewData["Title"]="Probabilidad y Estadística";
+   var maxCat=Math.Max(1,Model.Categorias.Select(x=>x.Cantidad).DefaultIfEmpty().Max());
+   var maxLib=Math.Max(1,Model.LibrosSolicitados.Select(x=>x.Cantidad).DefaultIfEmpty().Max());
+   var maxProb=Math.Max(0.000001,Model.Probabilidades.Select(x=>x.Probabilidad).DefaultIfEmpty().Max());
+   var estadosPaleta=new[]{"#9b6348","#d6a168","#70886f","#667993","#bd8877","#b7a386"};
+   var arco=string.Join(", ",Model.Estados.Select((e,i)=>new{E=e,I=i}).Select(x=>new {Color=estadosPaleta[x.I%estadosPaleta.Length],Start=Model.Estados.Take(x.I).Sum(v=>v.Porcentaje),End=Model.Estados.Take(x.I+1).Sum(v=>v.Porcentaje)}).Select(x=>$"{x.Color} {x.Start:0.###}% {x.End:0.###}%"));
+}
+<section class="page-hero"><div class="shell"><p class="eyebrow">SOLO ADMINISTRADORES · DATOS REALES DE MYSQL</p><h1>Probabilidad y <i>Estadística.</i></h1><p>Resumen de la plataforma y cuatro distribuciones discretas aplicadas al catálogo y al comportamiento de los usuarios.</p></div></section>
+<section class="shell section-pad-sm stats-page">
+  <div class="stats-kpis">
+    <article><span>📚 Libros en catálogo</span><strong>@Model.TotalLibros</strong><small>Fichas bibliográficas registradas</small></article>
+    <article><span>📖 Alquileres activos</span><strong>@Model.Activos</strong><small>@Model.TotalAlquileres alquileres registrados en total</small></article>
+    <article><span>👥 Usuarios registrados</span><strong>@Model.TotalUsuarios</strong><small>@Model.UsuariosConPlaylist con playlist</small></article>
+    <article><span>♫ Playlists</span><strong>@Model.TotalPlaylists</strong><small>@Model.PorcentajePlaylists.ToString("0.0")% de usuarios con playlist</small></article>
+  </div>
+  <div class="stats-grid mt-4">
+    <article class="stats-card"><h3>Distribución por géneros de libros</h3><p>Frecuencias absolutas y relativas de las categorías actuales</p>
+      @if(Model.Categorias.Count==0){<p class="text-muted">Sin libros registrados.</p>}
+      @foreach(var x in Model.Categorias.Take(8)){<div class="stats-row"><span>@x.Etiqueta</span><div class="stats-track"><div style="width:@((100.0*x.Cantidad/maxCat).ToString("0.##",System.Globalization.CultureInfo.InvariantCulture))%"></div></div><strong>@x.Cantidad (@x.Porcentaje.ToString("0.0")%)</strong></div>}
+    </article>
+    <article class="stats-card"><h3>Estado de los alquileres</h3><p>Composición de los registros de alquiler</p>
+      <div class="stats-donut-row"><div role="img" aria-label="Distribución porcentual de alquileres" class="stats-donut" style="background:conic-gradient(@(Model.Estados.Count>0?arco:"#e9dfd1 0% 100%"))"><div>@Model.TotalAlquileres<small>alquileres</small></div></div>
+      <div class="stats-legend">@foreach(var e in Model.Estados.Select((x,i)=>new{X=x,I=i})){<p><span class="stats-swatch" style="background:@estadosPaleta[e.I%estadosPaleta.Length]"></span>@e.X.Etiqueta: <b>@e.X.Cantidad (@e.X.Porcentaje.ToString("0.0")%)</b></p>}</div></div>
+    </article>
+    <article class="stats-card"><h3>Libros más solicitados</h3><p>Conteo histórico de alquileres por obra</p>
+      @if(Model.LibrosSolicitados.Count==0){<p class="text-muted">Aún no hay alquileres registrados.</p>}
+      @foreach(var x in Model.LibrosSolicitados){<div class="stats-row"><span>@x.Etiqueta</span><div class="stats-track"><div style="width:@((100.0*x.Cantidad/maxLib).ToString("0.##",System.Globalization.CultureInfo.InvariantCulture))%"></div></div><strong>@x.Cantidad</strong></div>}
+    </article>
+    <article class="stats-card"><h3>Actividad de los últimos 14 días</h3><p>Solicitudes registradas por fecha</p>
+      <div class="stats-timeline">@foreach(var d in Model.UltimosDias){var maxDia=Math.Max(1,Model.UltimosDias.Max(x=>x.Cantidad));<div class="stats-day" title="@d.Etiqueta: @d.Cantidad alquileres"><span>@d.Cantidad</span><div style="height:@((Math.Max(5,100.0*d.Cantidad/maxDia)).ToString("0.##",System.Globalization.CultureInfo.InvariantCulture))%"></div><small>@d.Etiqueta</small></div>}</div>
+      <p class="small mt-3">Duración media de alquileres devueltos: <strong>@Model.DuracionMedia.ToString("0.0") días</strong>.</p>
+    </article>
+  </div>
+  <article class="stats-card stats-distribution mt-4">
+    <div class="d-flex gap-3 justify-content-between align-items-center flex-wrap"><div><p class="eyebrow">HERRAMIENTAS DE PROBABILIDAD</p><h2>Modelos de <i>distribución.</i></h2></div>
+    <form method="get"><label for="modelo" class="small fw-bold me-2">Selecciona un modelo</label><select id="modelo" name="modelo" class="form-select d-inline-block w-auto" onchange="this.form.submit()"><option value="binomial" selected="@(Model.Distribucion=="binomial")">Binomial</option><option value="geometrica" selected="@(Model.Distribucion=="geometrica")">Geométrica</option><option value="hipergeometrica" selected="@(Model.Distribucion=="hipergeometrica")">Hipergeométrica</option><option value="poisson" selected="@(Model.Distribucion=="poisson")">Poisson</option></select><noscript><button class="btn btn-earth btn-sm">Calcular</button></noscript></form></div>
+    <h3 class="mt-3">@Model.TituloDistribucion</h3><p>@Model.ContextoDistribucion</p><p class="stats-parameters">@Model.Parametros</p>
+    @if(Model.ParametrosDidacticos){<p class="notice-pending">Sin suficientes registros: se muestra un ejemplo didáctico, no una predicción basada en observaciones reales.</p>}
+    <div class="row g-4 mt-2"><div class="col-lg-8"><h4>Función de probabilidad P(X = k)</h4><div class="stats-prob-chart" role="img" aria-label="Gráfico de columnas de la distribución @Model.TituloDistribucion">@foreach(var x in Model.Probabilidades){<div class="stats-prob-column" title="k=@x.K, P=@x.Probabilidad.ToString("0.0000")"><span>@(x.Probabilidad>=0.025?x.Probabilidad.ToString("0.00"):"")</span><div style="height:@((Math.Max(1,100*x.Probabilidad/maxProb)).ToString("0.##",System.Globalization.CultureInfo.InvariantCulture))%"></div><small>@x.K</small></div>}</div><p class="small text-muted">k = número de éxitos/eventos. El gráfico muestra una función de masa de probabilidad, no datos inventados del usuario.</p></div>
+    <div class="col-lg-4"><div class="stats-theory"><h4>Resultados teóricos</h4><div><small>Esperanza E[X]</small><strong>@Model.MediaTeorica.ToString("0.000")</strong></div><div><small>Varianza Var(X)</small><strong>@Model.VarianzaTeorica.ToString("0.000")</strong></div><p class="small mt-3">Los modelos asumen condiciones matemáticas que deben comprobarse antes de hacer predicciones reales.</p></div></div></div>
+  </article>
+</section>

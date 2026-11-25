@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>7aa3b993-8c4c-4a98-854a-081477afe87a</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PrivateAudio/**/*.wav" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="PrivateAudio/**/*.mp3" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="PrivateBooks/**/*.txt" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="PrivateBooks/**/*.pdf" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- Migraciones antiguas: creadas para SQLite. Se conservan como historial,
+       pero NO se ejecutan en la nueva base MySQL. -->
+  <ItemGroup><Compile Remove="Migrations/**/*.cs" /></ItemGroup>
+</Project>

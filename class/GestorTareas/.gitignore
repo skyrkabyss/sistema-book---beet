@@ -1,0 +1,14 @@
+
+bin/
+obj/
+.vs/
+.vscode/
+appsettings.json
+appsettings.Development.json
+.env
+*.pfx
+*.user
+PrivateAudio/
+PrivateBooks/
+wwwroot/uploads/
+
